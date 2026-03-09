@@ -1,107 +1,84 @@
-import axios from "axios";
-import yts from "yt-search";
-import fs from "fs";
-import path from "path";
-import ffmpeg from "fluent-ffmpeg";
-import { promisify } from "util";
-import { pipeline } from "stream";
+import axios from "axios"
+import yts from "yt-search"
 
-const streamPipe = promisify(pipeline);
+const API_BASE = (global.APIs?.may || "").replace(/\/+$/, "")
+const API_KEY  = global.APIKeys?.may || ""
 
-const handler = async (msg, { conn, text }) => {
-  const pref = global.prefixes?.[0] || ".";
+const handler = async (msg, { conn, args, usedPrefix, command }) => {
 
-  if (!text || !text.trim()) {
-    return conn.sendMessage(
-      msg.key.remoteJid,
-      { text: `✳️ Usa:\n${pref}play <término>\nEj: *${pref}play* bad bunny diles` },
-      { quoted: msg }
-    );
-  }
+  const chatId = msg.key.remoteJid
+  const query = args.join(" ").trim()
 
-  await conn.sendMessage(msg.key.remoteJid, {
-    react: { text: "🕒", key: msg.key }
-  });
+  if (!query)
+    return conn.sendMessage(chatId, {
+      text: `✳️ Usa:\n${usedPrefix}${command} <nombre de canción>\nEj:\n${usedPrefix}${command} no surprises`
+    }, { quoted: msg })
 
-  const res = await yts(text);
-  const video = res.videos[0];
-  if (!video) {
-    return conn.sendMessage(
-      msg.key.remoteJid,
-      { text: "❌ Sin resultados." },
-      { quoted: msg }
-    );
-  }
-
-  const { url: videoUrl, title, timestamp: duration, author, thumbnail } = video;
-  const artista = author.name;
+  conn.sendMessage(chatId, { react: { text: "🕒", key: msg.key } }).catch(() => {})
 
   try {
-    const infoMsg = `
-> *𝚈𝙾𝚄𝚃𝚄𝙱𝙴 𝙳𝙾𝚆𝙽𝙻𝙾𝙰𝙳𝙴𝚁*
+    const search = await yts(query)
+    const video = search?.videos?.[0]
+    if (!video) throw "No se encontró ningún resultado"
 
-🎵 *𝚃𝚒𝚝𝚞𝚕𝚘:* ${title}
-🎤 *𝙰𝚛𝚝𝚒𝚜𝚝𝚊:* ${artista}
-🕑 *𝙳𝚞𝚛𝚊𝚌𝚒ó𝚗:* ${duration}
-`.trim();
+    const title    = video.title
+    const author   = video.author?.name || "Desconocido"
+    const duration = video.timestamp || "Desconocida"
+    const thumb    = video.thumbnail || "https://i.ibb.co/3vhYnV0/default.jpg"
+    const link     = video.url
 
-    await conn.sendMessage(
-      msg.key.remoteJid,
-      { image: { url: thumbnail }, caption: infoMsg },
-      { quoted: msg }
-    );
+    conn.sendMessage(chatId, {
+      image: { url: thumb },
+      caption: `
+⭒ ִֶָ७ ꯭🎵˙⋆｡ - *Título:* ${title}
+⭒ ִֶָ७ ꯭🎤˙⋆｡ - *Artista:* ${author}
+⭒ ִֶָ७ ꯭🕑˙⋆｡ - *Duración:* ${duration}
+`.trim()
+    }, { quoted: msg }).catch(() => {})
 
-    const api = `https://api.neoxr.eu/api/youtube?url=${encodeURIComponent(videoUrl)}&type=audio&quality=128kbps&apikey=russellxz`;
-    const r = await axios.get(api);
-    if (!r.data?.status || !r.data.data?.url) throw new Error("No se pudo obtener el audio");
-
-    const tmp = path.join(process.cwd(), "tmp");
-    if (!fs.existsSync(tmp)) fs.mkdirSync(tmp);
-    const inFile = path.join(tmp, `${Date.now()}_in.m4a`);
-    const outFile = path.join(tmp, `${Date.now()}_out.mp3`);
-
-    const dl = await axios.get(r.data.data.url, { responseType: "stream" });
-    await streamPipe(dl.data, fs.createWriteStream(inFile));
-
-    await new Promise((res, rej) =>
-      ffmpeg(inFile)
-        .audioCodec("libmp3lame")
-        .audioBitrate("128k")
-        .format("mp3")
-        .save(outFile)
-        .on("end", res)
-        .on("error", rej)
-    );
-
-    const buffer = fs.readFileSync(outFile);
-
-    await conn.sendMessage(
-      msg.key.remoteJid,
-      {
-        audio: buffer,
-        mimetype: "audio/mpeg",
-        fileName: `${title}.mp3`,
-        ptt: false
+    const res = await axios.get(`${API_BASE}/ytdl`, {
+      params: {
+        url: link,
+        type: "Mp3",
+        apikey: API_KEY
       },
-      { quoted: msg }
-    );
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+      },
+      timeout: 20000
+    })
 
-    fs.unlinkSync(inFile);
-    fs.unlinkSync(outFile);
+    const data = res?.data
+    const audioUrl = data?.result?.url
 
-    await conn.sendMessage(msg.key.remoteJid, {
-      react: { text: "✅", key: msg.key }
-    });
+    if (
+      !data?.status ||
+      !audioUrl ||
+      typeof audioUrl !== "string" ||
+      !audioUrl.startsWith("http")
+    ) throw "La API no devolvió un audio válido"
+
+    const cleanTitle = (data.result.title || title).replace(/\.mp3$/i, "")
+
+    await conn.sendMessage(chatId, {
+      audio: { url: audioUrl },
+      mimetype: "audio/mpeg",
+      fileName: `${cleanTitle}.mp3`,
+      ptt: false
+    }, { quoted: msg })
+
+    conn.sendMessage(chatId, { react: { text: "✅", key: msg.key } }).catch(() => {})
+
   } catch (e) {
-    console.error(e);
-    await conn.sendMessage(
-      msg.key.remoteJid,
-      { text: "⚠️ Error al descargar el audio." },
-      { quoted: msg }
-    );
+    conn.sendMessage(chatId, {
+      text: `❌ Error: ${typeof e === "string" ? e : "Fallo interno"}`
+    }, { quoted: msg })
   }
-};
+}
 
-handler.command = ["play"];
+handler.command = ["play", "ytplay"]
+handler.help    = ["play <texto>"]
+handler.tags    = ["descargas"]
 
-export default handler;
+export default handler
