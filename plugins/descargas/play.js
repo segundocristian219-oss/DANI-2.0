@@ -16,13 +16,15 @@ Ejemplo: *play autos edits*`)
 
   try {
 
+    let stage = 'yt-search'
+
     if (isLink) {
 
       const id =
         text.split('v=')[1]?.split('&')[0] ||
         text.split('/').pop()
 
-      const res = await yts({ videoId:id })
+      const res = await yts({ videoId: id })
       video = res
 
     } else {
@@ -33,13 +35,15 @@ Ejemplo: *play autos edits*`)
     }
 
     if (!video)
-      throw 'Video no encontrado'
+      throw new Error('Video no encontrado')
 
     await conn.sendMessage(
       m.chat,
-      { text:`🪐 Descargando audio de *${video.title}*...` },
-      { quoted:m }
+      { text: `🪐 Descargando audio de *${video.title}*...` },
+      { quoted: m }
     )
+
+    stage = 'api-request'
 
     const apiURL =
       `https://optishield.uk/api/?type=youtubedl` +
@@ -48,27 +52,48 @@ Ejemplo: *play autos edits*`)
       `&video=0`
 
     const apiRes = await fetch(apiURL)
+
+    stage = 'api-response'
+
+    if (!apiRes.ok)
+      throw new Error(`HTTP ${apiRes.status}`)
+
     const json = await apiRes.json()
 
+    stage = 'json-parse'
+
     if (!json?.result?.download)
-      throw 'No se pudo obtener el audio'
+      throw new Error('API no devolvió enlace de descarga')
+
+    stage = 'send-audio'
 
     await conn.sendMessage(
       m.chat,
       {
-        audio:{ url:json.result.download },
-        mimetype:'audio/mpeg',
-        fileName:`${video.title}.mp3`
+        audio: { url: json.result.download },
+        mimetype: 'audio/mpeg',
+        fileName: `${video.title}.mp3`
       },
-      { quoted:m }
+      { quoted: m }
     )
 
   } catch (e) {
 
+    const debug =
+`🌱 Error en comando play
+
+Etapa: ${e.stage || 'desconocida'}
+
+Mensaje: ${e.message || e}
+
+Stack:
+${(e.stack || '').slice(0, 500)}
+`
+
     await conn.sendMessage(
       m.chat,
-      { text:`🌱 Error\n${e}` },
-      { quoted:m }
+      { text: debug },
+      { quoted: m }
     )
 
   }
