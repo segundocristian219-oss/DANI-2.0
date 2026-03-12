@@ -58,12 +58,26 @@ Ejemplo: *play autos edits*`)
     if (!apiRes.ok)
       throw new Error(`HTTP ${apiRes.status}`)
 
-    const json = await apiRes.json()
+    const raw = await apiRes.text()
 
-    stage = 'json-parse'
+    let json
 
-    if (!json?.result?.download)
-      throw new Error('API no devolvió enlace de descarga')
+    try {
+      json = JSON.parse(raw)
+    } catch {
+      throw new Error(`La API devolvió HTML o texto:\n${raw.slice(0,300)}`)
+    }
+
+    stage = 'json-check'
+
+    if (!json?.result?.download) {
+      throw new Error(
+`La API respondió pero no devolvió download
+
+Respuesta API:
+${JSON.stringify(json,null,2).slice(0,400)}`
+      )
+    }
 
     stage = 'send-audio'
 
@@ -84,10 +98,11 @@ Ejemplo: *play autos edits*`)
 
 Etapa: ${e.stage || 'desconocida'}
 
-Mensaje: ${e.message || e}
+Mensaje:
+${e.message || e}
 
 Stack:
-${(e.stack || '').slice(0, 500)}
+${(e.stack || '').slice(0,500)}
 `
 
     await conn.sendMessage(
