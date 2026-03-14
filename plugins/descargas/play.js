@@ -1,5 +1,6 @@
-const handler = async (m, { conn, text, command }) => {
+import fetch from 'node-fetch'
 
+const handler = async (m, { conn, text, command }) => {
   await conn.sendMessage(m.chat, {
     react: { text: "🔥", key: m.key }
   }).catch(() => {})
@@ -7,14 +8,12 @@ const handler = async (m, { conn, text, command }) => {
   if (!text) throw `Ejemplo:\n${command} karma police`
 
   try {
-
     const search = await fetch(
       `https://api.ryuzei.xyz/search/yts?q=${encodeURIComponent(text)}`,
       {
         headers: {
           "User-Agent": "Mozilla/5.0",
-          "Accept": "application/json",
-          "Referer": "https://youtube.com/"
+          "Accept": "application/json"
         }
       }
     )
@@ -24,15 +23,14 @@ const handler = async (m, { conn, text, command }) => {
     if (!sjson.status || !sjson.results?.length)
       throw "No encontré resultados"
 
-    const video = sjson.results[0]
+    const videoId = sjson.results[0].id
 
     const dl = await fetch(
-      `https://api.ryuzei.xyz/dl/ytmp3?url=${encodeURIComponent(video.url)}`,
+      `https://api.ryuzei.xyz/dl/ytmp3?id=${videoId}`,
       {
         headers: {
           "User-Agent": "Mozilla/5.0",
-          "Accept": "application/json",
-          "Referer": "https://youtube.com/"
+          "Accept": "application/json"
         }
       }
     )
@@ -55,9 +53,7 @@ const handler = async (m, { conn, text, command }) => {
 
     await conn.sendMessage(m.chat, {
       image: { url: info.thumbnail },
-      caption: `🎵 ${info.title}
-⏱ ${info.duration}
-👁 ${info.views}`
+      caption: `🎵 ${info.title}\n⏱ ${info.duration}\n👁 ${info.views}`
     }, { quoted: m })
 
     await conn.sendMessage(m.chat, {
@@ -71,5 +67,5 @@ const handler = async (m, { conn, text, command }) => {
   }
 }
 
-handler.command = ['play','mp3']
+handler.command = ['play', 'mp3']
 export default handler
