@@ -8,9 +8,16 @@ const handler = async (m, { conn, text, command }) => {
 
   try {
 
-    const search = await fetch(`https://api.ryuzei.xyz/search/yts?q=${encodeURIComponent(text)}`, {
-      headers: { "User-Agent": "Mozilla/5.0" }
-    })
+    const search = await fetch(
+      `https://api.ryuzei.xyz/search/yts?q=${encodeURIComponent(text)}`,
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json",
+          "Referer": "https://youtube.com/"
+        }
+      }
+    )
 
     const sjson = await search.json()
 
@@ -21,15 +28,21 @@ const handler = async (m, { conn, text, command }) => {
 
     const dl = await fetch(
       `https://api.ryuzei.xyz/dl/ytmp3?url=${encodeURIComponent(video.url)}`,
-      { headers: { "User-Agent": "Mozilla/5.0" } }
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json",
+          "Referer": "https://youtube.com/"
+        }
+      }
     )
 
-    const raw = await dl.text()
+    const textRaw = await dl.text()
 
-    if (raw.startsWith("<!DOCTYPE") || raw.startsWith("<html"))
-      throw "La API devolvió HTML (bloqueo o endpoint incorrecto)"
+    if (textRaw.startsWith("<"))
+      throw "La API devolvió HTML (bloqueo del servidor)"
 
-    const json = JSON.parse(raw)
+    const json = JSON.parse(textRaw)
 
     if (!json.status)
       throw "API status false"
@@ -38,12 +51,11 @@ const handler = async (m, { conn, text, command }) => {
     const audio = json.download?.url
 
     if (!audio)
-      throw "No se encontró audio"
+      throw "No se obtuvo el audio"
 
     await conn.sendMessage(m.chat, {
       image: { url: info.thumbnail },
-      caption:
-`🎵 ${info.title}
+      caption: `🎵 ${info.title}
 ⏱ ${info.duration}
 👁 ${info.views}`
     }, { quoted: m })
@@ -54,16 +66,8 @@ const handler = async (m, { conn, text, command }) => {
       fileName: `${info.title}.mp3`
     }, { quoted: m })
 
-  } catch (err) {
-
-    await conn.reply(
-      m.chat,
-      `❌ ERROR PLAY
-
-${err}`,
-      m
-    )
-
+  } catch (e) {
+    await conn.reply(m.chat, `❌ ERROR\n${e}`, m)
   }
 }
 
