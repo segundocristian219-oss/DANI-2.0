@@ -4,58 +4,52 @@ const handler = async (m, { conn, text, command }) => {
     react: { text: "🔥", key: m.key }
   }).catch(() => {})
 
-  if (!text) throw `Ejemplo:\n${command} yan block`
+  if (!text) throw `Ejemplo:\n${command} karma police`
 
   try {
 
-    const url = `https://api.ryuzei.xyz/api/play?q=${encodeURIComponent(text)}`
-    await conn.reply(m.chat, `DEBUG\nURL:\n${url}`, m)
+    await conn.reply(m.chat, "🔎 Buscando en YouTube...", m)
 
-    const res = await fetch(url)
+    const search = await fetch(`https://api.ryuzei.xyz/search/yt?q=${encodeURIComponent(text)}`, {
+      headers: { "User-Agent": "Mozilla/5.0" }
+    })
 
-    await conn.reply(m.chat, `DEBUG\nHTTP STATUS: ${res.status}`, m)
+    const searchJson = await search.json()
 
-    if (!res.ok) throw `HTTP ERROR ${res.status}`
+    if (!searchJson.status || !searchJson.data?.length)
+      throw "No encontré resultados"
 
-    const json = await res.json()
+    const video = searchJson.data[0]
+    const videoUrl = video.url
 
-    await conn.reply(m.chat, `DEBUG\nAPI STATUS: ${json.status}`, m)
+    await conn.reply(m.chat, `🎵 Encontrado:\n${video.title}`, m)
 
-    if (!json.status) throw "API devolvió status false"
+    const dl = await fetch(`https://api.ryuzei.xyz/dl/ytmp3?url=${encodeURIComponent(videoUrl)}`, {
+      headers: { "User-Agent": "Mozilla/5.0" }
+    })
 
-    if (!json.data) throw "API no tiene data"
+    const json = await dl.json()
 
-    if (!json.download) throw "API no tiene download"
+    if (!json.status) throw "Error al convertir a mp3"
 
-    if (!json.download.url) throw "API no tiene URL de audio"
-
-    const { title, duration, views, ago, thumbnail } = json.data
+    const info = json.data
     const audio = json.download.url
 
-    await conn.reply(m.chat, `DEBUG\nAudio URL detectada`, m)
-
     await conn.sendMessage(m.chat, {
-      image: { url: thumbnail },
-      caption: `🎵 ${title}
-⏱ ${duration}
-👁 ${views}
-📅 ${ago}`
+      image: { url: info.thumbnail },
+      caption: `🎵 ${info.title}
+⏱ ${info.duration}
+👁 ${info.views}`
     }, { quoted: m })
-
-    await conn.reply(m.chat, `DEBUG\nImagen enviada`, m)
 
     await conn.sendMessage(m.chat, {
       audio: { url: audio },
       mimetype: "audio/mpeg",
-      fileName: `${title}.mp3`
+      fileName: `${info.title}.mp3`
     }, { quoted: m })
 
-    await conn.reply(m.chat, `DEBUG\nAudio enviado`, m)
-
   } catch (err) {
-
     await conn.reply(m.chat, `❌ ERROR\n${err}`, m)
-
   }
 }
 
