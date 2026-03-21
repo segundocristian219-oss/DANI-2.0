@@ -14,10 +14,10 @@ global.prems = []
 
 global.emoji = '📎'
 global.emoji2 = '🏞️'
-global.namebot = '𝐃𝐗𝐍𝐍𝐘.𝐁𝐎𝐓'
-global.botname = '𝐃𝐗𝐍𝐍𝐘.𝐁𝐎𝐓'
+global.namebot = '𝓓𝓜𝓛.𝓑𝓞𝓣'
+global.botname = '𝓓𝓜𝓛.𝓑𝓞𝓣'
 global.banner = 'https://files.catbox.moe/5qf1h2.jpg'
-global.packname = '𝐃𝐗𝐍𝐍𝐘.𝐁𝐎𝐓'
+global.packname = '𝓓𝓜𝓛.𝓑𝓞𝓣'
 global.author = '𝖣𝖾𝗌𝖺𝗋o𝗅𝗅𝖺𝖽𝗈 𝗉𝗈𝗋 𝐇𝐄𝐑𝐍𝐀𝐍𝐃𝐄𝐙'
 global.sessions = '𝐏𝐀𝐓𝐎 𝐁𝐎𝐓'
 
