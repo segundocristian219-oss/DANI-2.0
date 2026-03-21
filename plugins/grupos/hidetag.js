@@ -5,7 +5,7 @@ const handler = async (m, { conn, participants }) => {
     if (!m.isGroup || m.key.fromMe) return
 
     // === fkontak con icono ===
-    const res = await fetch('https://files.catbox.moe/5qf1h2.jpg');
+    const res = await fetch('https://files.catbox.moe/mijp4t.jpg');
     const thumb = Buffer.from(await res.arrayBuffer());
     const fkontak = {
         key: {
