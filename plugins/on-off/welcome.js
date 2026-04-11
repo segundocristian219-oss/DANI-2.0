@@ -1,7 +1,7 @@
 import { WAMessageStubType } from '@whiskeysockets/baileys'
 
 const ppCache = new Map()
-const CACHE_TTL = 60_000
+const CACHE_TTL = 60000
 
 async function getProfilePic(conn, jid) {
   const cached = ppCache.get(jid)
@@ -18,7 +18,7 @@ async function getProfilePic(conn, jid) {
 
   ppCache.set(jid, { url, time: Date.now() })
 
-  if (ppCache.size > 1000) {
+  if (ppCache.size > 500) {
     for (const [k, v] of ppCache) {
       if (Date.now() - v.time > CACHE_TTL) ppCache.delete(k)
     }
@@ -45,23 +45,25 @@ async function sendEvent(conn, chatId, jid, text) {
 }
 
 export async function before(m, { conn, groupMetadata }) {
-  if (!m.isGroup || !m.messageStubType) return true
+  if (!m.isGroup) return true
 
   const chat = global.db.data.chats[m.chat]
-  if (chat.welcome === undefined) chat.welcome = true
-if (!chat.welcome) return true
+  if (!chat || !chat.welcome) return true
+
+  const type = m.messageStubType
+  if (!type) return true
 
   const groupName = groupMetadata?.subject || 'Grupo'
   const groupDesc = groupMetadata?.desc || 'Sin descripción'
   const users = m.messageStubParameters || []
 
   const byeMsgs = [
-    `*╭┈┈┈┈┈┈┈┈┈┈┈┈┈≫*
+`*╭┈┈┈┈┈┈┈┈┈┈┈┈┈≫*
 *┊* @user
 *┊𝗧𝗨 𝗔𝗨𝗦𝗘𝗡𝗖𝗜𝗔 𝗙𝗨𝗘 𝗖𝗢𝗠𝗢 𝗨𝗡 𝗤𝗟𝗢*
 *┊𝗖𝗢𝗡 𝗢𝗟𝗢𝗥 𝗔 𝗠𝗥𝗗* 👿
 *╰┈┈┈┈┈┈┈┈┈┈┈┈┈≫*`,
-    `*╭┈┈┈┈┈┈┈┈┈┈┈┈┈≫*
+`*╭┈┈┈┈┈┈┈┈┈┈┈┈┈≫*
 *┊* @user
 *┊𝗔𝗟𝗚𝗨𝗜𝗘𝗡 𝗠𝗘𝗡𝗢𝗦*
 *┊𝗡𝗔𝗗𝗜𝗘 𝗧𝗘 𝗩𝗔 𝗔 𝗘𝗫𝗧𝗥𝗔𝗡̃𝗔𝗥* 👿
@@ -72,7 +74,7 @@ if (!chat.welcome) return true
     const user = `@${jid.split('@')[0]}`
     const data = { user, group: groupName, desc: groupDesc }
 
-    if (m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_ADD) {
+    if (type === WAMessageStubType.GROUP_PARTICIPANT_ADD || type === 27 || type === 31) {
       const text = chat.sWelcome
         ? parseText(chat.sWelcome, data)
         : `┊» 𝙋𝙊𝙍 𝙁𝙄𝙉 𝙇𝙇𝙀𝗚𝗔𝗦
@@ -81,16 +83,20 @@ if (!chat.welcome) return true
 ┊» 𝗹𝗲𝗲 𝗹𝗮 𝗱𝗲𝘀𝗰𝗿𝗶𝗽𝗰𝗶𝗼𝗻
 
 » Siéntete como en tu casa`
+
       await sendEvent(conn, m.chat, jid, text)
     }
 
     if (
-      m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_LEAVE ||
-      m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_REMOVE
+      type === WAMessageStubType.GROUP_PARTICIPANT_LEAVE ||
+      type === WAMessageStubType.GROUP_PARTICIPANT_REMOVE ||
+      type === 28 ||
+      type === 32
     ) {
       const text = chat.sBye
         ? parseText(chat.sBye, data)
         : parseText(byeMsgs[Math.floor(Math.random() * byeMsgs.length)], data)
+
       await sendEvent(conn, m.chat, jid, text)
     }
   }
