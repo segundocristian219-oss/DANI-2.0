@@ -5,7 +5,7 @@ const handler = async (m, { conn, participants }) => {
     if (!m.isGroup || m.key.fromMe) return
 
     // === fkontak con icono ===
-    const res = await fetch('https://files.catbox.moe/mijp4t.jpg');
+    const res = await fetch('https://cdn.russellxz.click/82fbcd16.jpg');
     const thumb = Buffer.from(await res.arrayBuffer());
     const fkontak = {
         key: {
@@ -16,7 +16,7 @@ const handler = async (m, { conn, participants }) => {
         },
         message: {
             locationMessage: {
-                name: `𝖧𝗈𝗅𝖺, 𝖲𝗈𝗒 𝓓𝓜𝓛.𝓑𝓞𝓣`,
+                name: `𝖧𝗈𝗅𝖺, 𝖲𝗈𝗒 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`,
                 jpegThumbnail: thumb
             }
         },
@@ -53,19 +53,19 @@ const handler = async (m, { conn, participants }) => {
 
                     if (finalText) {
                         await conn.sendMessage(m.chat, {
-                            text: `${finalText}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`,
+                            text: `${finalText}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`,
                             mentions: users
                         }, { quoted: fkontak })
                     }
                 } catch {
                     await conn.sendMessage(m.chat, {
-                        text: `${finalCaption}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`,
+                        text: `${finalCaption}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`,
                         mentions: users
                     }, { quoted: fkontak })
                 }
             } else {
-                if (mtype === 'imageMessage') await conn.sendMessage(m.chat, { image: media, caption: `${finalCaption}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`, mentions: users }, { quoted: fkontak })
-                if (mtype === 'videoMessage') await conn.sendMessage(m.chat, { video: media, caption: `${finalCaption}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`, mentions: users, mimetype: 'video/mp4' }, { quoted: fkontak })
+                if (mtype === 'imageMessage') await conn.sendMessage(m.chat, { image: media, caption: `${finalCaption}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`, mentions: users }, { quoted: fkontak })
+                if (mtype === 'videoMessage') await conn.sendMessage(m.chat, { video: media, caption: `${finalCaption}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`, mentions: users, mimetype: 'video/mp4' }, { quoted: fkontak })
                 if (mtype === 'stickerMessage') await conn.sendMessage(m.chat, { sticker: media, mentions: users }, { quoted: fkontak })
             }
         } else if (m.quoted && !isMedia) {
@@ -76,7 +76,7 @@ const handler = async (m, { conn, participants }) => {
                     { [mtype || 'extendedTextMessage']: q.message?.[mtype] || { text: finalCaption } },
                     { quoted: fkontak, userJid: conn.user.id }
                 ),
-                `${finalCaption}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`,
+                `${finalCaption}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`,
                 conn.user.jid,
                 { mentions: users }
             )
@@ -94,24 +94,24 @@ const handler = async (m, { conn, participants }) => {
 
                     if (finalText) {
                         await conn.sendMessage(m.chat, {
-                            text: `${finalText}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`,
+                            text: `${finalText}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`,
                             mentions: users
                         }, { quoted: fkontak })
                     }
                 } catch {
                     await conn.sendMessage(m.chat, {
-                        text: `${finalCaption}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`,
+                        text: `${finalCaption}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`,
                         mentions: users
                     }, { quoted: fkontak })
                 }
             } else {
-                if (mtype === 'imageMessage') await conn.sendMessage(m.chat, { image: media, caption: `${finalCaption}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`, mentions: users }, { quoted: fkontak })
-                if (mtype === 'videoMessage') await conn.sendMessage(m.chat, { video: media, caption: `${finalCaption}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`, mentions: users, mimetype: 'video/mp4' }, { quoted: fkontak })
+                if (mtype === 'imageMessage') await conn.sendMessage(m.chat, { image: media, caption: `${finalCaption}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`, mentions: users }, { quoted: fkontak })
+                if (mtype === 'videoMessage') await conn.sendMessage(m.chat, { video: media, caption: `${finalCaption}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`, mentions: users, mimetype: 'video/mp4' }, { quoted: fkontak })
                 if (mtype === 'stickerMessage') await conn.sendMessage(m.chat, { sticker: media, mentions: users }, { quoted: fkontak })
             }
         } else {
             await conn.sendMessage(m.chat, {
-                text: `${finalCaption}\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`,
+                text: `${finalCaption}\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`,
                 mentions: users
             }, { quoted: fkontak })
         }
@@ -119,7 +119,7 @@ const handler = async (m, { conn, participants }) => {
     } catch (e) {
         const users = participants.map(u => conn.decodeJid(u.id))
         await conn.sendMessage(m.chat, {
-            text: `🥷 Notificación\n\n> 𝓓𝓜𝓛.𝓑𝓞𝓣`,
+            text: `🥷 Notificación\n\n> 𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁`,
             mentions: users
         }, { quoted: fkontak })
     }
