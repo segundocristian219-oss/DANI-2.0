@@ -11,7 +11,7 @@ const handler = async (msg, { conn }) => {
 
   // Mensaje de aviso
   await conn.sendMessage(chatId, {
-    text: "🔄 *𝓓𝓜𝓛.𝓑𝓞𝓣 se reiniciará en unos segundos...*"
+    text: "🔄 *𝐓𝐈𝐊𝐈𝐓𝐎𝐁𝐁 se reiniciará en unos segundos...*"
   }, { quoted: msg });
 
   // Guardar chat para notificar luego
