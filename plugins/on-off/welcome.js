@@ -1,5 +1,3 @@
-import { WAMessageStubType } from '@whiskeysockets/baileys'
-
 const ppCache = new Map()
 const CACHE_TTL = 60000
 
@@ -36,29 +34,53 @@ function parseText(text, data) {
 }
 
 async function sendEvent(conn, chatId, jid, text) {
-  const pic = await getProfilePic(conn, jid)
-  await conn.sendMessage(chatId, {
-    image: { url: pic },
-    caption: text,
-    mentions: [jid]
-  })
+  try {
+    console.log("SEND_EVENT_START", { chatId, jid })
+
+    const pic = await getProfilePic(conn, jid)
+
+    await conn.sendMessage(chatId, {
+      image: { url: pic },
+      caption: text,
+      mentions: [jid]
+    })
+
+    console.log("SEND_EVENT_SUCCESS")
+  } catch (e) {
+    console.log("SEND_EVENT_ERROR", e)
+  }
 }
 
-export async function before(m, { conn, groupMetadata }) {
-  if (!m.isGroup) return true
+export default function setupWelcome(conn) {
+  console.log("WELCOME_SYSTEM_INIT")
 
-  const chat = global.db.data.chats[m.chat]
-  if (!chat || !chat.welcome) return true
+  conn.ev.on('group-participants.update', async (update) => {
+    try {
+      console.log("EVENT_RECEIVED", update)
 
-  const type = m.messageStubType
-  if (!type) return true
+      const { id, participants, action } = update
 
-  const users = m.messageStubParameters || []
+      console.log("GROUP_ID:", id)
+      console.log("PARTICIPANTS:", participants)
+      console.log("ACTION:", action)
 
-  const groupName = groupMetadata?.subject || 'Grupo'
-  const groupDesc = groupMetadata?.desc || 'Sin descripción'
+      const chat = global.db.data.chats[id]
+      console.log("CHAT_EXISTS:", !!chat)
+      console.log("WELCOME_ENABLED:", chat?.welcome)
 
-  const byeMsgs = [
+      if (!chat || !chat.welcome) return
+
+      let groupMetadata = {}
+      try {
+        groupMetadata = await conn.groupMetadata(id)
+      } catch (e) {
+        console.log("METADATA_ERROR", e)
+      }
+
+      const groupName = groupMetadata?.subject || 'Grupo'
+      const groupDesc = groupMetadata?.desc || 'Sin descripción'
+
+      const byeMsgs = [
 `*╭┈┈┈┈┈┈┈┈┈┈┈┈┈≫*
 *┊* @user
 *┊𝗧𝗨 𝗔𝗨𝗦𝗘𝗡𝗖𝗜𝗔 𝗙𝗨𝗘 𝗖𝗢𝗠𝗢 𝗨𝗡 𝗤𝗟𝗢*
@@ -69,41 +91,43 @@ export async function before(m, { conn, groupMetadata }) {
 *┊𝗔𝗟𝗚𝗨𝗜𝗘𝗡 𝗠𝗘𝗡𝗢𝗦*
 *┊𝗡𝗔𝗗𝗜𝗘 𝗧𝗘 𝗩𝗔 𝗔 𝗘𝗫𝗧𝗥𝗔𝗡̃𝗔𝗥* 👿
 *╰┈┈┈┈┈┈┈┈┈┈┈┈┈≫*`
-  ]
+      ]
 
-  for (const u of users) {
-    const jid = typeof u === 'string' ? u : (u.jid || u.id)
-    if (!jid) continue
+      for (const jid of participants) {
+        console.log("PROCESSING:", jid)
 
-    const user = `@${jid.split('@')[0]}`
-    const data = { user, group: groupName, desc: groupDesc }
+        const user = `@${jid.split('@')[0]}`
+        const data = { user, group: groupName, desc: groupDesc }
 
-    if (type === WAMessageStubType.GROUP_PARTICIPANT_ADD || type === 27 || type === 31) {
-      const text = chat.sWelcome
-        ? parseText(chat.sWelcome, data)
-        : `┊» 𝙋𝙊𝙍 𝙁𝙄𝙉 𝙇𝙇𝙀𝗚𝗔𝗦
+        if (action === 'add') {
+          console.log("JOIN_DETECTED")
+
+          const text = chat.sWelcome
+            ? parseText(chat.sWelcome, data)
+            : `┊» 𝙋𝙊𝙍 𝙁𝙄𝙉 𝙇𝙇𝙀𝗚𝗔𝗦
 ┊» ${groupName}
 ┊» ${user}
 ┊» 𝗹𝗲𝗲 𝗹𝗮 𝗱𝗲𝘀𝗰𝗿𝗶𝗽𝗰𝗶𝗼𝗻
 
 » Siéntete como en tu casa`
 
-      await sendEvent(conn, m.chat, jid, text)
+          await sendEvent(conn, id, jid, text)
+        }
+
+        if (action === 'remove') {
+          console.log("LEAVE_DETECTED")
+
+          const text = chat.sBye
+            ? parseText(chat.sBye, data)
+            : parseText(byeMsgs[Math.floor(Math.random() * byeMsgs.length)], data)
+
+          await sendEvent(conn, id, jid, text)
+        }
+      }
+
+      console.log("EVENT_DONE")
+    } catch (err) {
+      console.log("WELCOME_FATAL_ERROR", err)
     }
-
-    if (
-      type === WAMessageStubType.GROUP_PARTICIPANT_LEAVE ||
-      type === WAMessageStubType.GROUP_PARTICIPANT_REMOVE ||
-      type === 28 ||
-      type === 32
-    ) {
-      const text = chat.sBye
-        ? parseText(chat.sBye, data)
-        : parseText(byeMsgs[Math.floor(Math.random() * byeMsgs.length)], data)
-
-      await sendEvent(conn, m.chat, jid, text)
-    }
-  }
-
-  return true
+  })
 }
