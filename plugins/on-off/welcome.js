@@ -45,17 +45,27 @@ async function sendEvent(conn, chatId, jid, text) {
 }
 
 export async function before(m, { conn, groupMetadata }) {
+  console.log("WELCOME_DEBUG_START")
+
+  console.log("IS_GROUP:", m.isGroup)
   if (!m.isGroup) return true
 
   const chat = global.db.data.chats[m.chat]
+  console.log("CHAT_EXISTS:", !!chat)
+  console.log("WELCOME_ENABLED:", chat?.welcome)
+
   if (!chat || !chat.welcome) return true
 
   const type = m.messageStubType
+  console.log("STUB_TYPE:", type)
+
   if (!type) return true
+
+  const users = m.messageStubParameters || []
+  console.log("USERS:", users)
 
   const groupName = groupMetadata?.subject || 'Grupo'
   const groupDesc = groupMetadata?.desc || 'Sin descripción'
-  const users = m.messageStubParameters || []
 
   const byeMsgs = [
 `*╭┈┈┈┈┈┈┈┈┈┈┈┈┈≫*
@@ -71,10 +81,14 @@ export async function before(m, { conn, groupMetadata }) {
   ]
 
   for (const jid of users) {
+    console.log("PROCESSING_JID:", jid)
+
     const user = `@${jid.split('@')[0]}`
     const data = { user, group: groupName, desc: groupDesc }
 
     if (type === WAMessageStubType.GROUP_PARTICIPANT_ADD || type === 27 || type === 31) {
+      console.log("EVENT: JOIN DETECTED")
+
       const text = chat.sWelcome
         ? parseText(chat.sWelcome, data)
         : `┊» 𝙋𝙊𝙍 𝙁𝙄𝙉 𝙇𝙇𝙀𝗚𝗔𝗦
@@ -85,6 +99,7 @@ export async function before(m, { conn, groupMetadata }) {
 » Siéntete como en tu casa`
 
       await sendEvent(conn, m.chat, jid, text)
+      console.log("WELCOME_SENT")
     }
 
     if (
@@ -93,13 +108,17 @@ export async function before(m, { conn, groupMetadata }) {
       type === 28 ||
       type === 32
     ) {
+      console.log("EVENT: LEAVE DETECTED")
+
       const text = chat.sBye
         ? parseText(chat.sBye, data)
         : parseText(byeMsgs[Math.floor(Math.random() * byeMsgs.length)], data)
 
       await sendEvent(conn, m.chat, jid, text)
+      console.log("BYE_SENT")
     }
   }
 
+  console.log("WELCOME_DEBUG_END")
   return true
 }
